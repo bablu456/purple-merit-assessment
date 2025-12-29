@@ -1,98 +1,69 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import AdminPanel from '../components/AdminPanel'; // Import zaroori hai
+import { useSelector, useDispatch } from 'react-redux';
+import AdminPanel from '../components/AdminPanel'; // Make sure path sahi ho
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
-  const [token, setToken] = useState('');
+  const dispatch = useDispatch();
+
+  // 1. Data seedha LocalStorage se uthao (Sabse Safe Tarika)
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userData = user || {};
 
   useEffect(() => {
-    // 1. Check karo user login hai ya nahi
-    const user = JSON.parse(localStorage.getItem('user'));
-
+    // Agar user login nahi hai to Login page par bhejo
     if (!user) {
       navigate('/login');
-    } else {
-      setToken(user.token); // Token save kiya AdminPanel ke liye
-      fetchUserProfile(user.token);
     }
-  }, [navigate]);
-
-  const fetchUserProfile = async (token) => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      const response = await axios.get('/api/users/profile', config);
-      setUserData(response.data);
-    } catch (error) {
-      console.log(error);
-      toast.error('Failed to fetch profile');
-    }
-  };
-
-  if (!userData) {
-    return <h1>Loading...</h1>;
-  }
+  }, [user, navigate]);
 
   return (
     <>
       <section className='heading'>
-        <h1>Welcome, {userData.fullName} 👋</h1>
+        <h1>Welcome, {userData.name || userData.fullName || 'User'}</h1>
         <p>User Dashboard</p>
       </section>
 
-      <div className='content'>
-        {/* User Profile Info */}
-        <table className='table' style={{ marginBottom: '30px' }}>
+      {/* Profile Details Table */}
+      <div className="profile-card" style={{margin: '20px auto', maxWidth: '600px', textAlign: 'left'}}>
+        <table className="table" style={{width: '100%', borderCollapse: 'collapse'}}>
           <tbody>
-              {/* ID ROW */}
-              <tr>
-                <th>ID</th>
-                <td>{userData._id || userData.id}</td>
-              </tr>
-
-              {/* NAME ROW (Fixed) */}
-              <tr>
-                <th>Full Name</th>
-                <td>{userData.name || userData.fullName || "Name Not Found"}</td>
-              </tr>
-
-              {/* EMAIL ROW */}
-              <tr>
-                <th>Email</th>
-                <td>{userData.email}</td>
-              </tr>
-
-              {/* ROLE ROW (Safe Check) */}
-              <tr>
-                <th>Role</th>
-                <td>
-                  <span style={{ 
-                    backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
-                    color: 'white',
-                    padding: '5px 10px',
-                    borderRadius: '5px'
-                  }}>
-                    {/* Agar role ho to dikhao, nahi to USER dikhao */}
-                    {userData.role ? userData.role.toUpperCase() : 'USER'}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
+            <tr>
+              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>ID</th>
+              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData._id || userData.id}</td>
+            </tr>
+            <tr>
+              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Full Name</th>
+              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData.name || userData.fullName}</td>
+            </tr>
+            <tr>
+              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Email</th>
+              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData.email}</td>
+            </tr>
+            <tr>
+              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Role</th>
+              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>
+                <span style={{ 
+                  backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
+                  color: 'white',
+                  padding: '5px 10px',
+                  borderRadius: '5px'
+                }}>
+                  {userData.role ? userData.role.toUpperCase() : 'USER'}
+                </span>
+              </td>
+            </tr>
+          </tbody>
         </table>
-
-        {/* --- ADMIN SECTION --- */}
-        {/* Agar User Admin hai, tabhi ye Panel dikhega */}
-        {userData.role === 'admin' && <AdminPanel token={token} />}
-      
       </div>
+
+      {/* 2. Admin Panel Sirf tab dikhao jab Role 'admin' ho */}
+      {userData.role === 'admin' ? (
+        <AdminPanel />
+      ) : (
+        <h3 style={{marginTop: '50px', color: 'gray'}}>You are not an Admin</h3>
+      )}
     </>
   );
 }
