@@ -67,13 +67,14 @@ function Dashboard() {
             <tr>
               <th>Role</th>
               <td>
+                {/* SAFE CODE: Agar role nahi mila to crash nahi hoga */}
                 <span style={{ 
-                  backgroundColor: userData.role === 'admin' ? 'red' : 'green',
+                  backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
                   color: 'white',
                   padding: '5px 10px',
                   borderRadius: '5px'
                 }}>
-                  {userData.role.toUpperCase()}
+                  {userData.role ? userData.role.toUpperCase() : 'USER'}
                 </span>
               </td>
             </tr>
