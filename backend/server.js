@@ -1,28 +1,29 @@
-// backend/server.js
 const express = require('express');
+const colors = require('colors');
 const dotenv = require('dotenv');
-const cors = require('cors');
+const { errorHandler } = require('./middleware/errorMiddleware');
 const connectDB = require('./config/db');
-const userRoutes = require('./routes/userRoutes'); // <-- CHANGE 1: Import Routes
+const PORT = process.env.PORT || 5000;
+const cors = require('cors'); // <--- YE LINE HONI CHAHIYE
 
 dotenv.config();
-
 connectDB();
 
 const app = express();
 
+// --- CORS CONFIGURATION (YE ADD KARNA HAI) ---
+// Isse hum Render ko bata rahe hain ki Vercel allowed hai
+app.use(cors({
+  origin: ["http://localhost:3000", "https://purple-merit-assessment-gules.vercel.app/"], 
+  credentials: true
+}));
+// Note: Upar 'https://purple-merit-assessment-gules.vercel.app/' ki jagah APNA VERCEL LINK dalo (bina '/' ke end me)
+
 app.use(express.json());
-app.use(cors());
+app.use(express.urlencoded({ extended: false }));
 
-app.get('/', (req, res) => {
-    res.send('API is running smoothly! 🚀');
-});
+app.use('/api/users', require('./routes/userRoutes'));
 
-// --- CHANGE 2: Use Routes ---
-// Iska matlab: Agar URL '/api/users' se shuru ho, toh userRoutes file check karo
-app.use('/api/users', userRoutes);
+app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
