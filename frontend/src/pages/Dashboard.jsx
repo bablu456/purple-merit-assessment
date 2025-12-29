@@ -52,33 +52,40 @@ function Dashboard() {
         {/* User Profile Info */}
         <table className='table' style={{ marginBottom: '30px' }}>
           <tbody>
-            <tr>
-              <th>ID</th>
-              <td>{userData._id}</td>
-            </tr>
-            <tr>
-              <th>Full Name</th>
-              <td>{userData.fullName}</td>
-            </tr>
-            <tr>
-              <th>Email</th>
-              <td>{userData.email}</td>
-            </tr>
-            <tr>
-              <th>Role</th>
-              <td>
-                {/* SAFE CODE: Agar role nahi mila to crash nahi hoga */}
-                <span style={{ 
-                  backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
-                  color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '5px'
-                }}>
-                  {userData.role ? userData.role.toUpperCase() : 'USER'}
-                </span>
-              </td>
-            </tr>
-          </tbody>
+              {/* ID ROW */}
+              <tr>
+                <th>ID</th>
+                <td>{userData._id || userData.id}</td>
+              </tr>
+
+              {/* NAME ROW (Fixed) */}
+              <tr>
+                <th>Full Name</th>
+                <td>{userData.name || userData.fullName || "Name Not Found"}</td>
+              </tr>
+
+              {/* EMAIL ROW */}
+              <tr>
+                <th>Email</th>
+                <td>{userData.email}</td>
+              </tr>
+
+              {/* ROLE ROW (Safe Check) */}
+              <tr>
+                <th>Role</th>
+                <td>
+                  <span style={{ 
+                    backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
+                    color: 'white',
+                    padding: '5px 10px',
+                    borderRadius: '5px'
+                  }}>
+                    {/* Agar role ho to dikhao, nahi to USER dikhao */}
+                    {userData.role ? userData.role.toUpperCase() : 'USER'}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
         </table>
 
         {/* --- ADMIN SECTION --- */}
