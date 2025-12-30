@@ -6,7 +6,7 @@ const {
   authUser,
   getUserProfile,
   updateUserProfile,
-  getUsers,
+  getAllUsers,
   deleteUser,
   updateUser,
   updateUserProfile
@@ -27,7 +27,7 @@ router.route('/profile')
 
 // Admin Routes (Login + Admin Role zaroori)
 router.route('/')
-    .get(protect, admin, getUsers);    // Saare users dekhne ke liye
+    .get(protect, admin, getAllUsers);    // Saare users dekhne ke liye
 
 router.route('/:id')
     .delete(protect, admin, deleteUser) // User delete karne ke liye
