@@ -1,70 +1,105 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import AdminPanel from '../components/AdminPanel'; // Make sure path sahi ho
+// AdminPanel import ko uncomment karo agar tumhare paas component hai
+// import AdminPanel from '../components/AdminPanel'; 
 
 function Dashboard() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  // 1. Data seedha LocalStorage se uthao (Sabse Safe Tarika)
-  const user = JSON.parse(localStorage.getItem('user'));
-  const userData = user || {};
+  const [user, setUser] = useState({
+    name: '',
+    email: '',
+    role: '',
+    _id: ''
+  });
 
   useEffect(() => {
-    // Agar user login nahi hai to Login page par bhejo
-    if (!user) {
+    // 1. Browser se data nikalo
+    const storedUser = localStorage.getItem('user');
+
+    if (!storedUser) {
+      // Agar data nahi hai, to Login par bhejo
       navigate('/login');
+    } else {
+      // 2. Data ko JSON mein convert karke State mein set karo
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
     }
-  }, [user, navigate]);
+  }, [navigate]);
 
   return (
-    <>
+    <div className="container" style={{ textAlign: 'center', marginTop: '20px' }}>
+      
+      {/* HEADER SECTION */}
       <section className='heading'>
-        <h1>Welcome, {userData.name || userData.fullName || 'User'}</h1>
+        <h1>Welcome, {user.fullName || user.name || "User"} 👋</h1>
         <p>User Dashboard</p>
       </section>
 
-      {/* Profile Details Table */}
-      <div className="profile-card" style={{margin: '20px auto', maxWidth: '600px', textAlign: 'left'}}>
-        <table className="table" style={{width: '100%', borderCollapse: 'collapse'}}>
+      {/* DATA TABLE */}
+      <div className="profile-card" style={{ 
+        maxWidth: '600px', 
+        margin: '20px auto', 
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)', 
+        borderRadius: '10px', 
+        overflow: 'hidden' 
+      }}>
+        <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
-            <tr>
-              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>ID</th>
-              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData._id || userData.id}</td>
+            
+            {/* ID */}
+            <tr style={{ borderBottom: '1px solid #eee' }}>
+              <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left' }}>ID</th>
+              <td style={{ padding: '15px', textAlign: 'left' }}>{user._id || user.id || "Loading..."}</td>
             </tr>
-            <tr>
-              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Full Name</th>
-              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData.name || userData.fullName}</td>
+
+            {/* FULL NAME */}
+            <tr style={{ borderBottom: '1px solid #eee' }}>
+              <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left' }}>Full Name</th>
+              <td style={{ padding: '15px', textAlign: 'left' }}>{user.fullName || user.name || "Checking..."}</td>
             </tr>
-            <tr>
-              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Email</th>
-              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>{userData.email}</td>
+
+            {/* EMAIL */}
+            <tr style={{ borderBottom: '1px solid #eee' }}>
+              <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left' }}>Email</th>
+              <td style={{ padding: '15px', textAlign: 'left' }}>{user.email || "Checking..."}</td>
             </tr>
+
+            {/* ROLE */}
             <tr>
-              <th style={{borderBottom: '1px solid #ddd', padding: '10px'}}>Role</th>
-              <td style={{borderBottom: '1px solid #ddd', padding: '10px'}}>
+              <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left' }}>Role</th>
+              <td style={{ padding: '15px', textAlign: 'left' }}>
                 <span style={{ 
-                  backgroundColor: (userData.role === 'admin') ? 'red' : 'green',
+                  backgroundColor: (user.role === 'admin') ? 'red' : 'green',
                   color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '5px'
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold'
                 }}>
-                  {userData.role ? userData.role.toUpperCase() : 'USER'}
+                  {user.role ? user.role.toUpperCase() : 'USER'}
                 </span>
               </td>
             </tr>
+
           </tbody>
         </table>
       </div>
 
-      {/* 2. Admin Panel Sirf tab dikhao jab Role 'admin' ho */}
-      {userData.role === 'admin' ? (
-        <AdminPanel />
+      {/* ADMIN PANEL CHECK */}
+      {/* Yahan check kar rahe hain ki kya user ADMIN hai? */}
+      {user.role === 'admin' ? (
+        <div style={{ marginTop: '30px' }}>
+          <h3 style={{color: 'red'}}>🔧 Admin Panel Active</h3>
+          {/* <AdminPanel />  <-- Agar component ready hai to uncomment kar dena */}
+          <p>You have full access to manage users.</p>
+        </div>
       ) : (
-        <h3 style={{marginTop: '50px', color: 'gray'}}>You are not an Admin</h3>
+        <div style={{ marginTop: '30px', color: 'gray' }}>
+          <p>You are a standard user.</p>
+        </div>
       )}
-    </>
+
+    </div>
   );
 }
 
