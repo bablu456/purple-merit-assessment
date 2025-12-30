@@ -5,24 +5,17 @@ import { toast } from 'react-toastify';
 function AdminPanel() {
   const [users, setUsers] = useState([]);
   
-  // Naya API URL (Render wala)
+  // Render URL (Ensure ye sahi ho)
   const API_URL = 'https://purple-merit-assessment-mhks.onrender.com/api/users/';
 
-  // 1. Saare Users ko Fetch karo
+  // Fetch Users
   const fetchUsers = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user ? user.token : null;
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const response = await axios.get(API_URL, config);
-      // Backend shayad { users: [...] } bhej raha ho ya direct array
-      // Hum dono check kar lenge
       if (response.data.users) {
         setUsers(response.data.users);
       } else {
@@ -30,11 +23,28 @@ function AdminPanel() {
       }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to fetch users');
     }
   };
 
-  // 2. User ko Delete karne ka function
+  // --- NEW: TOGGLE STATUS FUNCTION ---
+  const toggleUserStatus = async (id, currentStatus) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user.token;
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Agar active hai to inactive karo, aur vice-versa
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+      await axios.put(API_URL + id, { status: newStatus }, config);
+      
+      toast.success(`User marked as ${newStatus}`);
+      fetchUsers(); // List refresh karo
+    } catch (error) {
+      toast.error('Update failed');
+    }
+  };
+
   const deleteUser = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
@@ -44,14 +54,13 @@ function AdminPanel() {
 
         await axios.delete(API_URL + id, config);
         toast.success('User Deleted');
-        fetchUsers(); // List refresh karo
+        fetchUsers();
       } catch (error) {
         toast.error('Delete failed');
       }
     }
   };
 
-  // Load users on component mount
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -65,6 +74,7 @@ function AdminPanel() {
             <th style={{ padding: '10px' }}>Name</th>
             <th style={{ padding: '10px' }}>Email</th>
             <th style={{ padding: '10px' }}>Role</th>
+            <th style={{ padding: '10px' }}>Status</th>
             <th style={{ padding: '10px' }}>Actions</th>
           </tr>
         </thead>
@@ -74,14 +84,43 @@ function AdminPanel() {
               <td style={{ padding: '10px' }}>{user.name || user.fullName}</td>
               <td style={{ padding: '10px' }}>{user.email}</td>
               <td style={{ padding: '10px' }}>
-                <span style={{ 
-                    color: user.role === 'admin' ? 'red' : 'green', 
-                    fontWeight: 'bold' 
-                }}>
+                <span style={{ color: user.role === 'admin' ? 'red' : 'green', fontWeight: 'bold' }}>
                     {user.role}
                 </span>
               </td>
+              
+              {/* STATUS COLUMN */}
               <td style={{ padding: '10px' }}>
+                <span style={{ 
+                  backgroundColor: user.status === 'inactive' ? '#ffcc00' : '#c3e6cb',
+                  padding: '5px 10px',
+                  borderRadius: '10px',
+                  color: user.status === 'inactive' ? 'black' : 'green',
+                  fontWeight: 'bold'
+                }}>
+                  {user.status || 'active'}
+                </span>
+              </td>
+
+              {/* ACTION BUTTONS */}
+              <td style={{ padding: '10px' }}>
+                {/* Status Toggle Button */}
+                <button 
+                  onClick={() => toggleUserStatus(user._id, user.status || 'active')}
+                  style={{ 
+                    background: user.status === 'inactive' ? 'green' : 'orange', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '5px 10px', 
+                    cursor: 'pointer', 
+                    borderRadius: '5px',
+                    marginRight: '10px'
+                  }}
+                >
+                  {user.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                </button>
+
+                {/* Delete Button */}
                 <button 
                   onClick={() => deleteUser(user._id)}
                   style={{ background: 'red', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '5px' }}
