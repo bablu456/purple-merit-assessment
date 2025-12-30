@@ -51,18 +51,22 @@ const authUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
-      user.lastLogin = new Date();
-      await user.save();
+    if (user && (await bcrypt.compare(password, user.password))) {
+  
+  // 👇 YE 2 LINES ADD KARO (Last Login Time Update)
+  user.lastLogin = Date.now();
+  await user.save(); 
+  // ------------------------------------------------
 
-      res.json({
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id),
-      });
-    } else {
+  res.json({
+    _id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status, // Status bhi bhej dete hain
+    token: generateToken(user._id),
+  });
+} else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
@@ -91,14 +95,21 @@ const getUserProfile = async (req, res) => {
 
 // --- 4. Update User Profile (Protected) ---
 // Route: PUT /api/users/profile
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
 const updateUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
-    user.fullName = req.body.fullName || user.fullName;
+    user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
 
+    // Agar user ne naya password bheja hai, to hi update karo
     if (req.body.password) {
+      // Salt aur Hash Model handle karega agar hum seedha save karenge,
+      // lekin hum manually bhi kar sakte hain safe side ke liye agar middleware issue kare:
+      // Note: User Model ka 'pre-save' middleware password hash kar lega.
       user.password = req.body.password;
     }
 
@@ -106,13 +117,14 @@ const updateUserProfile = async (req, res) => {
 
     res.json({
       _id: updatedUser._id,
-      fullName: updatedUser.fullName,
+      name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
       token: generateToken(updatedUser._id),
     });
   } else {
-    res.status(404).json({ message: 'User not found' });
+    res.status(404);
+    throw new Error('User not found');
   }
 };
 
@@ -167,13 +179,13 @@ const updateUser = async (req, res) => {
     res.status(404).json({ message: 'User not found' });
   }
 };
-
+  
 module.exports = {
   registerUser,
-  authUser,
-  getUserProfile,
-  updateUserProfile,
-  getUsers,
+  loginUser,
+  getMe,
+  getAllUsers,
   deleteUser,
-  updateUser,
+  updateUser,        // Ye Admin wala update hai
+  updateUserProfile, // <--- YE NAYA WALA ADD KARO (User khud ke liye)
 };
