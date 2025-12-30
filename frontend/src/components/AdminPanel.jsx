@@ -1,128 +1,98 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { toast } from 'react-toastify';
-import userService from '../features/userService';
 
-function AdminPanel({ token }) {
+function AdminPanel() {
   const [users, setUsers] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  
+  // Naya API URL (Render wala)
+  const API_URL = 'https://purple-merit-assessment-mhks.onrender.com/api/users/';
 
-  // Users Load karne ka function
-  const loadUsers = async () => {
+  // 1. Saare Users ko Fetch karo
+  const fetchUsers = async () => {
     try {
-      const data = await userService.getAllUsers(token, page);
-      setUsers(data.users);
-      setPage(data.page);
-      setTotalPages(data.pages);
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user ? user.token : null;
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.get(API_URL, config);
+      // Backend shayad { users: [...] } bhej raha ho ya direct array
+      // Hum dono check kar lenge
+      if (response.data.users) {
+        setUsers(response.data.users);
+      } else {
+        setUsers(response.data);
+      }
     } catch (error) {
-      toast.error('Error fetching users');
+      console.error(error);
+      toast.error('Failed to fetch users');
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]); 
-
-  // User Delete Handler
-  const handleDelete = async (id) => {
+  // 2. User ko Delete karne ka function
+  const deleteUser = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await userService.deleteUser(id, token);
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = user.token;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        await axios.delete(API_URL + id, config);
         toast.success('User Deleted');
-        loadUsers(); // List refresh karo
+        fetchUsers(); // List refresh karo
       } catch (error) {
-        toast.error('Failed to delete');
+        toast.error('Delete failed');
       }
     }
   };
 
-  // Toggle Status (Active/Inactive)
-  const toggleStatus = async (user) => {
-      try {
-          const newStatus = user.status === 'active' ? 'inactive' : 'active';
-          await userService.updateUserStatus(user._id, newStatus, token);
-          toast.success(`User marked as ${newStatus}`);
-          loadUsers();
-      } catch (error) {
-          toast.error('Failed to update status');
-      }
-  }
+  // Load users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   return (
-    <div style={{ marginTop: '30px', borderTop: '2px solid #ddd', paddingTop: '20px' }}>
-      <h2 style={{ marginBottom: '20px' }}>Admin Panel - User Management</h2>
-      
-      <div style={{ overflowX: 'auto' }}>
-        <table className='table'>
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
+    <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+      <h3>All Registered Users</h3>
+      <table className="table" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        <thead>
+          <tr style={{ background: '#333', color: '#fff' }}>
+            <th style={{ padding: '10px' }}>Name</th>
+            <th style={{ padding: '10px' }}>Email</th>
+            <th style={{ padding: '10px' }}>Role</th>
+            <th style={{ padding: '10px' }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user._id} style={{ borderBottom: '1px solid #ddd' }}>
+              <td style={{ padding: '10px' }}>{user.name || user.fullName}</td>
+              <td style={{ padding: '10px' }}>{user.email}</td>
+              <td style={{ padding: '10px' }}>
+                <span style={{ 
+                    color: user.role === 'admin' ? 'red' : 'green', 
+                    fontWeight: 'bold' 
+                }}>
+                    {user.role}
+                </span>
+              </td>
+              <td style={{ padding: '10px' }}>
+                <button 
+                  onClick={() => deleteUser(user._id)}
+                  style={{ background: 'red', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '5px' }}
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-            </thead>
-            <tbody>
-            {users.map((user) => (
-                <tr key={user._id}>
-                <td>{user.fullName}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>
-                    <span style={{ 
-                        color: user.status === 'active' ? 'green' : 'red',
-                        fontWeight: 'bold' 
-                    }}>
-                        {user.status.toUpperCase()}
-                    </span>
-                </td>
-                <td>
-                    <button 
-                        className='btn' 
-                        style={{ backgroundColor: '#ffc107', color: 'black', marginRight: '5px', padding: '5px 10px', fontSize: '12px' }}
-                        onClick={() => toggleStatus(user)}
-                    >
-                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </button>
-
-                    <button 
-                        className='btn' 
-                        style={{ backgroundColor: 'red', padding: '5px 10px', fontSize: '12px' }}
-                        onClick={() => handleDelete(user._id)}
-                    >
-                        Delete
-                    </button>
-                </td>
-                </tr>
-            ))}
-            </tbody>
-        </table>
-      </div>
-
-      {/* Pagination Controls */}
-      <div style={{ marginTop: '20px', display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
-          <button 
-            className='btn' 
-            disabled={page === 1} 
-            onClick={() => setPage(page - 1)}
-            style={{ opacity: page === 1 ? 0.5 : 1 }}
-          >
-              Previous
-          </button>
-          
-          <span style={{ fontWeight: 'bold' }}> Page {page} of {totalPages} </span>
-          
-          <button 
-            className='btn' 
-            disabled={page === totalPages} 
-            onClick={() => setPage(page + 1)}
-            style={{ opacity: page === totalPages ? 0.5 : 1 }}
-          >
-              Next
-          </button>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
