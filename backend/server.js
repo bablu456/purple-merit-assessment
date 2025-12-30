@@ -1,7 +1,7 @@
 const express = require('express');
 const colors = require('colors');
 const dotenv = require('dotenv');
-const { errorHandler } = require('./middleware/errorMiddleware');
+const { errorHandler } = require('./middleware/authMiddleware');
 const connectDB = require('./config/db');
 const PORT = process.env.PORT || 5000;
 const cors = require('cors'); // <--- YE LINE HONI CHAHIYE
