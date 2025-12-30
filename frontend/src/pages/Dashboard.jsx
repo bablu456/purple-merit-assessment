@@ -125,7 +125,7 @@ function Dashboard() {
             </tr>
             <tr style={{ borderBottom: '1px solid #eee' }}>
               <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left', color: '#333' }}>Full Name</th>
-              <td style={{ padding: '15px', textAlign: 'left', color: '#555' }}>{user.name}</td>
+              <td style={{ padding: '15px', textAlign: 'left', color: '#555' }}>{user.name || user.fullName}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #eee' }}>
               <th style={{ padding: '15px', background: '#f8f9fa', textAlign: 'left', color: '#333' }}>Email</th>
