@@ -130,16 +130,32 @@ const updateUserProfile = async (req, res) => {
 
 // --- 5. Get All Users (Admin Only) ---
 // Route: GET /api/users
-const getUsers = async (req, res) => {
-  const pageSize = 10;
-  const page = Number(req.query.pageNumber) || 1;
+// @desc    Get all users (with pagination)
+// @route   GET /api/users?pageNumber=1
+// @access  Private/Admin
+const getAllUsers = async (req, res) => {
+  try {
+    const pageSize = 10; // PDF requirement: 10 users per page
+    const page = Number(req.query.pageNumber) || 1;
 
-  const count = await User.countDocuments({});
-  const users = await User.find({})
-    .limit(pageSize)
-    .skip(pageSize * (page - 1));
+    // Total users count karo taaki pata chale kitne pages honge
+    const count = await User.countDocuments({});
 
-  res.json({ users, page, pages: Math.ceil(count / pageSize) });
+    const users = await User.find({})
+      .limit(pageSize)
+      .skip(pageSize * (page - 1)) // Pichle pages skip karo
+      .sort({ createdAt: -1 }); // Naye users pehle dikhao
+
+    res.json({ 
+      users, 
+      page, 
+      pages: Math.ceil(count / pageSize),
+      total: count 
+    });
+  } catch (error) {
+    res.status(400);
+    throw new Error('Error fetching users');
+  }
 };
 
 // --- 6. Delete User (Admin Only) ---
