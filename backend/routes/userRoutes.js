@@ -9,7 +9,6 @@ const {
   getAllUsers,
   deleteUser,
   updateUser,
-  updateUserProfile
 } = require('../controllers/userController');
 
 // Middleware import kiya
@@ -18,7 +17,6 @@ const { protect, admin } = require('../middleware/authMiddleware');
 // Public Routes
 router.post('/register', registerUser);
 router.post('/login', authUser);
-router.put('/profile', protect, updateUserProfile);
 
 // Protected Routes (User ko login hona padega)
 router.route('/profile')

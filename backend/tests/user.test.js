@@ -24,8 +24,8 @@ describe('Backend Unit Tests', () => {
 
   // Test 3: Object Validation
   it('Should validate user object structure', () => {
-    const user = { name: 'Bablu', role: 'admin' };
-    expect(user).toHaveProperty('name');
+    const user = { fullName: 'Bablu', role: 'admin' };
+    expect(user).toHaveProperty('fullName');
     expect(user.role).toEqual('admin');
   });
 
