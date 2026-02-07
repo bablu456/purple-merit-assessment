@@ -10,7 +10,9 @@ const generateToken = (id) => {
 };
 
 // --- 1. Register User (Signup) ---
-// Route: POST /api/users/register
+// @desc    Register a new user
+// @route   POST /api/users/register
+// @access  Public
 const registerUser = async (req, res) => {
   const { fullName, email, password } = req.body;
 
@@ -44,7 +46,9 @@ const registerUser = async (req, res) => {
 };
 
 // --- 2. Login User ---
-// Route: POST /api/users/login
+// @desc    Authenticate user & get token
+// @route   POST /api/users/login
+// @access  Public
 const authUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -52,156 +56,169 @@ const authUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-  
-  // 👇 YE 2 LINES ADD KARO (Last Login Time Update)
-  user.lastLogin = Date.now();
-  await user.save(); 
-  // ------------------------------------------------
+      // Update last login time
+      user.lastLogin = Date.now();
+      await user.save();
 
-  res.json({
-    _id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    status: user.status, // Status bhi bhej dete hain
-    token: generateToken(user._id),
-  });
-} else {
+      res.json({
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        token: generateToken(user._id),
+      });
+    } else {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
-    // --- DEBUG LOGGING ADDED ---
-    console.error("LOGIN ERROR:", error); // Ye error terminal me print karega
+    console.error('LOGIN ERROR:', error);
     res.status(500).json({ message: error.message });
   }
 };
 
 // --- 3. Get User Profile (Protected) ---
-// Route: GET /api/users/profile
+// @desc    Get logged-in user's profile
+// @route   GET /api/users/profile
+// @access  Private
 const getUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (user) {
-    res.json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-    });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+    if (user) {
+      res.json({
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // --- 4. Update User Profile (Protected) ---
-// Route: PUT /api/users/profile
-// @desc    Update user profile
+// @desc    Update logged-in user's own profile
 // @route   PUT /api/users/profile
 // @access  Private
 const updateUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
+    if (user) {
+      user.fullName = req.body.fullName || user.fullName;
+      user.email = req.body.email || user.email;
 
-    // Agar user ne naya password bheja hai, to hi update karo
-    if (req.body.password) {
-      // Salt aur Hash Model handle karega agar hum seedha save karenge,
-      // lekin hum manually bhi kar sakte hain safe side ke liye agar middleware issue kare:
-      // Note: User Model ka 'pre-save' middleware password hash kar lega.
-      user.password = req.body.password;
+      // Only update password if a new one is provided
+      if (req.body.password) {
+        user.password = req.body.password;
+      }
+
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        token: generateToken(updatedUser._id),
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
     }
-
-    const updatedUser = await user.save();
-
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      token: generateToken(updatedUser._id),
-    });
-  } else {
-    res.status(404);
-    throw new Error('User not found');
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // --- 5. Get All Users (Admin Only) ---
-// Route: GET /api/users
-// @desc    Get all users (with pagination)
+// @desc    Get all users with pagination
 // @route   GET /api/users?pageNumber=1
 // @access  Private/Admin
 const getAllUsers = async (req, res) => {
   try {
-    const pageSize = 10; // PDF requirement: 10 users per page
+    const pageSize = 10;
     const page = Number(req.query.pageNumber) || 1;
 
-    // Total users count karo taaki pata chale kitne pages honge
     const count = await User.countDocuments({});
 
     const users = await User.find({})
+      .select('-password')
       .limit(pageSize)
-      .skip(pageSize * (page - 1)) // Pichle pages skip karo
-      .sort({ createdAt: -1 }); // Naye users pehle dikhao
+      .skip(pageSize * (page - 1))
+      .sort({ createdAt: -1 });
 
-    res.json({ 
-      users, 
-      page, 
+    res.json({
+      users,
+      page,
       pages: Math.ceil(count / pageSize),
-      total: count 
+      total: count,
     });
   } catch (error) {
-    res.status(400);
-    throw new Error('Error fetching users');
+    res.status(500).json({ message: error.message });
   }
 };
 
 // --- 6. Delete User (Admin Only) ---
-// Route: DELETE /api/users/:id
+// @desc    Delete a user by ID
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
 const deleteUser = async (req, res) => {
-  const user = await User.findById(req.params.id);
+  try {
+    const user = await User.findById(req.params.id);
 
-  if (user) {
-    await user.deleteOne();
-    res.json({ message: 'User removed' });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+    if (user) {
+      await user.deleteOne();
+      res.json({ message: 'User removed successfully' });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 // --- 7. Update User Status/Role (Admin Only) ---
-// Route: PUT /api/users/:id
+// @desc    Update any user's info (role, status, etc.)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
 const updateUser = async (req, res) => {
-  const user = await User.findById(req.params.id);
+  try {
+    const user = await User.findById(req.params.id);
 
-  if (user) {
-    user.fullName = req.body.fullName || user.fullName;
-    user.email = req.body.email || user.email;
-    user.role = req.body.role || user.role;
-    user.status = req.body.status || user.status;
+    if (user) {
+      user.fullName = req.body.fullName || user.fullName;
+      user.email = req.body.email || user.email;
+      user.role = req.body.role || user.role;
+      user.status = req.body.status || user.status;
 
-    const updatedUser = await user.save();
+      const updatedUser = await user.save();
 
-    res.json({
-      _id: updatedUser._id,
-      fullName: updatedUser.fullName,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      status: updatedUser.status,
-    });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+      res.json({
+        _id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
-  
+
+// --- Export All Controllers ---
 module.exports = {
   registerUser,
-  loginUser,
-  getMe,
+  authUser,
+  getUserProfile,
   getAllUsers,
   deleteUser,
-  updateUser,        // Ye Admin wala update hai
-  updateUserProfile, // <--- YE NAYA WALA ADD KARO (User khud ke liye)
+  updateUser,
+  updateUserProfile,
 };
